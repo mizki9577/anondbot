@@ -148,7 +148,7 @@ class AnondBotDaemon:
 
 
 def main():
-    daemon = AnondBotDaemon(CONFIG_FILE_PATH, dry_run=True)
+    daemon = AnondBotDaemon(CONFIG_FILE_PATH)
     daemon.run()
 
 if __name__ == '__main__':
