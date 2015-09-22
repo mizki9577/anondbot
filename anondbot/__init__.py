@@ -91,6 +91,9 @@ class AnondBotDaemon:
     はてな匿名ダイアリー通知bot
     '''
 
+    STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
+    ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
+
     def __init__(self, config_file_path):
         # 設定読み込み
         self.config_file_path = config_file_path
@@ -107,10 +110,6 @@ class AnondBotDaemon:
                             client_secret=consumer_secret,
                             resource_owner_key=access_token,
                             resource_owner_secret=access_secret)
-        self.statuses_update_url = self.config['twitter']['statuses_update_url']
-
-        # 増田の URL とか
-        self.anond_feed_url = self.config['anond']['feed_url']
 
         # デーモンの設定
         self.last_article_timestamp = int(
@@ -136,7 +135,7 @@ class AnondBotDaemon:
 
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
-        articles = AnondFeed(self.anond_feed_url)
+        articles = AnondFeed(self.ANOND_FEED_URL)
         for article in reversed(articles):
             if self.last_article_timestamp >= article.datetime.timestamp():
                 continue
@@ -150,7 +149,7 @@ class AnondBotDaemon:
             self.config.write(f)
 
     def post_twitter(self, status):
-        requests.post(self.statuses_update_url, params={'status': status}, auth=self.oauth)
+        requests.post(self.STATUSES_UPDATE_URL, params={'status': status}, auth=self.oauth)
         syslog.syslog(status)
 
 
