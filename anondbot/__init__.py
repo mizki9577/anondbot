@@ -147,6 +147,3 @@ class AnondBotDaemon:
 def main():
     daemon = AnondBotDaemon(AnondBotDaemon.CONFIG_FILE_PATH)
     daemon.run()
-
-if __name__ == '__main__':
-    main()
