@@ -3,7 +3,8 @@ import setuptools
 setuptools.setup(
     name='anondbot',
     version='1.0.0',
-    author='Mizki SUZUMORI <mizki9577@gmail.com>',
+    author='Mizki SUZUMORI',
+    author_email='mizki9577@gmail.com',
     license='2-Clause BSD',
     packages=['anondbot'],
     install_requires=[

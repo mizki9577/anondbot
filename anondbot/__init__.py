@@ -3,13 +3,15 @@ import syslog
 import time
 import datetime
 import sys
+import traceback
+import os.path
 
 import requests
 from requests_oauthlib import OAuth1
 from bs4 import BeautifulSoup
 import pep3143daemon as daemon
 
-CONFIG_FILE_PATH = '/etc/anondbot.conf'
+CONFIG_FILE_PATH = os.path.abspath('./anondbot.conf')
 
 
 class AnondArticle:
@@ -61,28 +63,10 @@ class AnondArticle:
         return datetime.datetime.strptime(self.id, '%Y%m%d%H%M%S')
 
 
-class AnondFeed:
-
-    '''
-    はてな匿名ダイアリーのフィードを表現するクラス
-    '''
-
-    def __init__(self, url):
-        doc = requests.get(url)
-        self.soup = BeautifulSoup(doc.content, 'html.parser')
-        self._url = url
-
-        article_urls = [tag['rdf:resource'] for tag in self.soup.find_all('rdf:li')]
-        self._articles = [AnondArticle(article_url) for article_url in article_urls]
-
-    def __len__(self):
-        return len(self._articles)
-
-    def __getitem__(self, key):
-        return self._articles[key]
-
-    def __iter__(self):
-        return iter(self._articles)
+def get_anond_articles(url):
+    doc = requests.get(url)
+    soup = BeautifulSoup(doc.content, 'html.parser')
+    return (AnondArticle(item['rdf:resource']) for item in reversed(soup.find_all('rdf:li')))
 
 
 class AnondBotDaemon:
@@ -94,7 +78,9 @@ class AnondBotDaemon:
     STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
 
-    def __init__(self, config_file_path):
+    def __init__(self, config_file_path, dry_run=False):
+        self.dry_run = dry_run
+
         # 設定読み込み
         self.config_file_path = config_file_path
         self.config = ConfigParser()
@@ -117,26 +103,33 @@ class AnondBotDaemon:
         self.interval_sec = int(
             self.config['config']['update_interval'])
         self.pid_file_path = self.config['config']['pid_file_path']
-        self.pid_file = daemon.PidFile(self.pid_file_path)
-        self.daemon = daemon.DaemonContext(pidfile=self.pid_file)
 
     def run(self):
         '''デーモンを開始する'''
-        self.daemon.open()
-        while True:
-            syslog.syslog('fetching')
-            try:
-                self.update()
-            except Exception as e:
-                syslog.syslog(str(e))
-                syslog.syslog('exiting')
-                sys.exit(1)
-            time.sleep(self.interval_sec)
+        pid_file = daemon.PidFile(self.pid_file_path)
+        daemon_context = daemon.DaemonContext(pidfile=pid_file)
+
+        try:
+            with daemon_context:
+                while True:
+                    self.update()
+                    time.sleep(self.interval_sec)
+        except SystemExit as e:
+            syslog.syslog('exiting request received. exiting...')
+            raise e
+        except:
+            syslog.syslog(traceback.format_exc())
+            syslog.syslog('error(s) occured. exiting...')
+            sys.exit(1)
+
 
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
-        articles = AnondFeed(self.ANOND_FEED_URL)
-        for article in reversed(articles):
+        syslog.syslog('fetching...')
+        articles = get_anond_articles(self.ANOND_FEED_URL)
+        syslog.syslog('fetching done.')
+
+        for article in articles:
             if self.last_article_timestamp >= article.datetime.timestamp():
                 continue
             self.last_article_timestamp = int(article.datetime.timestamp())
@@ -149,12 +142,13 @@ class AnondBotDaemon:
             self.config.write(f)
 
     def post_twitter(self, status):
-        requests.post(self.STATUSES_UPDATE_URL, params={'status': status}, auth=self.oauth)
+        if not self.dry_run:
+            requests.post(self.STATUSES_UPDATE_URL, params={'status': status}, auth=self.oauth)
         syslog.syslog(status)
 
 
 def main():
-    daemon = AnondBotDaemon(CONFIG_FILE_PATH)
+    daemon = AnondBotDaemon(CONFIG_FILE_PATH, dry_run=True)
     daemon.run()
 
 if __name__ == '__main__':
