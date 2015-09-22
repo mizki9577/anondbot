@@ -2,7 +2,6 @@ from configparser import ConfigParser
 import syslog
 import time
 import datetime
-import os.path
 import sys
 
 import requests
@@ -10,7 +9,7 @@ from requests_oauthlib import OAuth1
 from bs4 import BeautifulSoup
 import pep3143daemon as daemon
 
-CONFIG_FILE_PATH = os.path.expandvars(os.path.expanduser('~/.anondbot.conf'))
+CONFIG_FILE_PATH = '/etc/anondbot.conf'
 
 
 class AnondArticle:
