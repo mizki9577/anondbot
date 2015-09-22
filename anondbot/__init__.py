@@ -1,10 +1,10 @@
 from configparser import ConfigParser
+from datetime import datetime
+import os.path
+import sys
 import syslog
 import time
-import datetime
-import sys
 import traceback
-import os.path
 
 import requests
 from requests_oauthlib import OAuth1
@@ -60,7 +60,7 @@ class AnondArticle:
     @property
     def datetime(self):
         '''記事の投稿日時を返す'''
-        return datetime.datetime.strptime(self.id, '%Y%m%d%H%M%S')
+        return datetime.strptime(self.id, '%Y%m%d%H%M%S')
 
 
 def get_anond_articles(url):
