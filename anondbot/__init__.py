@@ -1,6 +1,5 @@
 from configparser import ConfigParser
 from datetime import datetime
-import os.path
 import sys
 import syslog
 import time
@@ -10,8 +9,6 @@ import requests
 from requests_oauthlib import OAuth1
 from bs4 import BeautifulSoup
 import pep3143daemon as daemon
-
-CONFIG_FILE_PATH = os.path.abspath('./anondbot.conf')
 
 
 class AnondArticle:
@@ -75,6 +72,7 @@ class AnondBotDaemon:
     はてな匿名ダイアリー通知bot
     '''
 
+    CONFIG_FILE_PATH = '/etc/anondbot.conf'
     STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
 
@@ -122,7 +120,6 @@ class AnondBotDaemon:
             syslog.syslog('error(s) occured. exiting...')
             sys.exit(1)
 
-
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
         syslog.syslog('fetching...')
@@ -148,7 +145,7 @@ class AnondBotDaemon:
 
 
 def main():
-    daemon = AnondBotDaemon(CONFIG_FILE_PATH)
+    daemon = AnondBotDaemon(AnondBotDaemon.CONFIG_FILE_PATH)
     daemon.run()
 
 if __name__ == '__main__':
