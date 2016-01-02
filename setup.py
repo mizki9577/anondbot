@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='anondbot',
-    version='1.1.0',
+    version='1.1.1',
     author='Mizki SUZUMORI',
     author_email='mizki9577@gmail.com',
     license='2-Clause BSD',
