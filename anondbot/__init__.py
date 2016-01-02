@@ -4,7 +4,7 @@ from docopt import docopt
 __doc__ = '''Twitter bot daemon which notifies recent articles of Hatena Anonymous Diary.
 
 Usage:
-  anondbotd [-hvndq] [-c FILE]
+  anondbot [-hvndq] [-c FILE]
 
 Options:
   -h --help         Show this help.

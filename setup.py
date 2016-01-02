@@ -16,7 +16,7 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'anondbotd=anondbot:main'
+            'anondbot=anondbot:main'
         ],
     },
 )
