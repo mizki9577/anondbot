@@ -88,7 +88,8 @@ class AnondBotDaemon:
     STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
 
-    def __init__(self, config_file_path, daemonize=None, dry_run=False, quiet=False):
+    def __init__(self, config_file_path,
+                 daemonize=None, dry_run=False, quiet=False):
         self.dry_run = dry_run
         self.daemonize = daemonize
         self.quiet = quiet
