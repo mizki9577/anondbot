@@ -11,7 +11,8 @@ setuptools.setup(
         'requests',
         'requests_oauthlib',
         'BeautifulSoup4',
-        'pep3143daemon'
+        'python-daemon',
+        'docopt',
     ],
     entry_points={
         'console_scripts': [

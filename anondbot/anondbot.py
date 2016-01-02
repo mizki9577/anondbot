@@ -88,13 +88,15 @@ class AnondBotDaemon:
     STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
 
-    def __init__(self, config_file_path, fork=None, dry_run=False):
+    def __init__(self, config_file_path, fork=None, dry_run=False, quiet=False):
         self.dry_run = dry_run
         self.fork = fork
         if self.fork:
             self.output = syslog.syslog
+        elif not quiet:
+            self.output = lambda *v: print(*v, file=sys.stdout)
         else:
-            self.output = lambda *v: print(*v, file=sys.stderr)
+            self.output = lambda *v: None
 
         # 設定読み込み
         self.config_file_path = config_file_path
@@ -123,10 +125,12 @@ class AnondBotDaemon:
         '''デーモンを開始する'''
         pid_file = lockfile.FileLock(self.pid_file_path)
         daemon_context = daemon.DaemonContext(
+            working_directory='.',
+            initgroups=False,
+            detach_process=self.fork,
             pidfile=pid_file,
-            uid=1000, gid=100, initgroups=False,
-            stdout=sys.stdout, stderr=sys.stderr,
-            detach_process=self.fork)
+            stdout=sys.stdout,
+            stderr=sys.stderr)
 
         try:
             with daemon_context:
