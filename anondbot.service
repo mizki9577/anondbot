@@ -1,0 +1,10 @@
+[Unit]
+Description=Twitter bot daemon which notifies recent articles of Hatena Anonymous Diary.
+
+[Service]
+ExecStart=/usr/bin/anondbot -d
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+
