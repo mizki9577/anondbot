@@ -91,12 +91,7 @@ class AnondBotDaemon:
     def __init__(self, config_file_path, daemonize=None, dry_run=False, quiet=False):
         self.dry_run = dry_run
         self.daemonize = daemonize
-        if self.daemonize:
-            self.output = syslog.syslog
-        elif not quiet:
-            self.output = lambda *v: print(*v, file=sys.stdout)
-        else:
-            self.output = lambda *v: None
+        self.quiet = quiet
 
         # 設定読み込み
         self.config_file_path = config_file_path
@@ -120,6 +115,12 @@ class AnondBotDaemon:
         self.interval_sec = int(
             self.config['config']['update_interval'])
         self.pid_file_path = self.config['config']['pid_file_path']
+
+    def output(self, value):
+        if self.daemonize:
+            syslog.syslog(value)
+        elif not self.quiet:
+            print(value, file=sys.stdout)
 
     def run(self):
         '''デーモンを開始する'''
