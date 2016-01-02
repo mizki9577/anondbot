@@ -20,4 +20,3 @@ setuptools.setup(
         ],
     },
 )
-
