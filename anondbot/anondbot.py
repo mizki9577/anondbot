@@ -88,10 +88,10 @@ class AnondBotDaemon:
     STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
 
-    def __init__(self, config_file_path, fork=None, dry_run=False, quiet=False):
+    def __init__(self, config_file_path, daemonize=None, dry_run=False, quiet=False):
         self.dry_run = dry_run
-        self.fork = fork
-        if self.fork:
+        self.daemonize = daemonize
+        if self.daemonize:
             self.output = syslog.syslog
         elif not quiet:
             self.output = lambda *v: print(*v, file=sys.stdout)
@@ -127,7 +127,7 @@ class AnondBotDaemon:
         daemon_context = daemon.DaemonContext(
             working_directory='.',
             initgroups=False,
-            detach_process=self.fork,
+            detach_process=self.daemonize,
             pidfile=pid_file,
             stdout=sys.stdout,
             stderr=sys.stderr)

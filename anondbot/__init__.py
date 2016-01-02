@@ -20,7 +20,7 @@ def main():
     args = docopt(__doc__, version='anondbot 1.1.0')
     params = {
         'config_file_path': args['--config'],
-        'fork'            : args['--daemonize'],
+        'daemonize'       : args['--daemonize'],
         'dry_run'         : args['--dry-run'],
         'quiet'           : args['--quiet'],
     }
