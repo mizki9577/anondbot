@@ -5,6 +5,7 @@ setuptools.setup(
     version='1.1.1',
     author='Mizki SUZUMORI',
     author_email='mizki9577@gmail.com',
+    description='Twitter bot daemon which notifies recent articles of Hatena Anonymous Diary.',
     license='2-Clause BSD',
     packages=['anondbot'],
     install_requires=[
