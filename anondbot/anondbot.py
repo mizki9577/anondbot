@@ -155,15 +155,17 @@ class AnondBotDaemon:
         for article in articles:
             if self.last_article_timestamp >= article.datetime.timestamp():
                 continue
+
             self.last_article_timestamp = int(article.datetime.timestamp())
+
             if not article.trackback_url:
                 self.post_twitter('{} {}'.format(article.title, article.url))
 
-        # 設定の保存
-        self.config['config']['last_article_timestamp'] = str(
-            self.last_article_timestamp)
-        with open(self.config_file_path, 'w') as f:
-            self.config.write(f)
+            # 設定の保存
+            self.config['config']['last_article_timestamp'] = str(
+                self.last_article_timestamp)
+            with open(self.config_file_path, 'w') as f:
+                self.config.write(f)
 
     def post_twitter(self, status):
         if not self.dry_run:
