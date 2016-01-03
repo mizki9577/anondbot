@@ -8,8 +8,7 @@ import traceback
 import requests
 from requests_oauthlib import OAuth1
 from bs4 import BeautifulSoup
-from daemon import daemon
-import lockfile
+from daemon import daemon, pidfile
 
 
 class AnondArticle:
@@ -125,7 +124,7 @@ class AnondBotDaemon:
 
     def run(self):
         '''デーモンを開始する'''
-        pid_file = lockfile.FileLock(self.pid_file_path)
+        pid_file = pidfile.PIDLockFile(self.pid_file_path)
         daemon_context = daemon.DaemonContext(
             working_directory='.',
             initgroups=False,
