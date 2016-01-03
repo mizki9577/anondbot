@@ -140,7 +140,7 @@ class AnondBotDaemon:
             sys.exit(1)
 
     def get_anond_articles(self):
-        '''新着記事の一覧を取得し古い順にリストで返す'''
+        '''新着記事の一覧を取得し古い順にジェネレータで返す'''
         self.output('fetching {}'.format(self.ANOND_FEED_URL))
         doc = requests.get(self.ANOND_FEED_URL)
         self.output('fetching finished.')
