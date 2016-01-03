@@ -1,9 +1,11 @@
 [Unit]
-Description=Twitter bot daemon which notifies recent articles of Hatena Anonymous Diary.
+Description=anondbot
 
 [Service]
+Type=forking
 ExecStart=/usr/bin/anondbot -d
 Restart=on-failure
+PIDFile=/tmp/anondbot.pid
 
 [Install]
 WantedBy=default.target
