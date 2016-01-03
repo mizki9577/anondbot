@@ -70,13 +70,6 @@ class AnondArticle:
         return datetime.strptime(self.id, '%Y%m%d%H%M%S')
 
 
-def get_anond_articles(url, output):
-    doc = requests.get(url)
-    soup = BeautifulSoup(doc.content, 'html.parser')
-    return (AnondArticle(item['rdf:resource'], output=output)
-            for item in reversed(soup.find_all('rdf:li')))
-
-
 class AnondBotDaemon:
 
     '''
@@ -146,10 +139,16 @@ class AnondBotDaemon:
             self.output('error(s) occured. exiting...')
             sys.exit(1)
 
+    def get_anond_articles(self):
+        doc = requests.get(self.ANOND_FEED_URL)
+        soup = BeautifulSoup(doc.content, 'html.parser')
+        return (AnondArticle(item['rdf:resource'], output=output)
+                for item in reversed(soup.find_all('rdf:li')))
+
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
         self.output('fetching...')
-        articles = get_anond_articles(self.ANOND_FEED_URL, output=self.output)
+        articles = self.get_anond_articles()
         self.output('fetching done.')
 
         for article in articles:
