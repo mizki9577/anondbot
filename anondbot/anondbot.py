@@ -140,16 +140,17 @@ class AnondBotDaemon:
             sys.exit(1)
 
     def get_anond_articles(self):
+        self.output('fetching {}'.format(self.ANOND_FEED_URL))
         doc = requests.get(self.ANOND_FEED_URL)
+        self.output('fetching finished.')
+
         soup = BeautifulSoup(doc.content, 'html.parser')
         return (AnondArticle(item['rdf:resource'], output=output)
                 for item in reversed(soup.find_all('rdf:li')))
 
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
-        self.output('fetching...')
         articles = self.get_anond_articles()
-        self.output('fetching done.')
 
         for article in articles:
             if self.last_article_timestamp >= article.datetime.timestamp():
