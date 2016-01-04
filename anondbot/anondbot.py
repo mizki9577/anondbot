@@ -17,12 +17,15 @@ class AnondArticle:
     はてな匿名ダイアリーの記事を表現するクラス
     '''
 
-    def __init__(self, url, output):
+    def __init__(self, url, dt, feed_content, output):
         self._url = url
+        self._dt = dt
+        self.feed_content = BeautifulSoup(feed_content, 'html.parser')
         self.output = output
         self.fetched = False
 
     def fetch(self):
+        '''記事を取得する'''
         if self.fetched:
             return
 
@@ -35,24 +38,24 @@ class AnondArticle:
             else:
                 break
 
-        self.soup = BeautifulSoup(doc.content, 'html.parser')
-        self._url = doc.url
+        self.real_content = BeautifulSoup(doc.content, 'html.parser')
         self.fetched = True
 
     @property
     def title(self):
         '''記事タイトルを返す'''
         self.fetch()
-        return self.soup.find('title').string
+        return self.real_content.find('title').string
 
     @property
     def trackback_url(self):
         '''トラックバック先の URL を返す'''
         self.fetch()
-        try:
-            return self.soup.find('a', {'class': 'self', 'name': 'tb'})['href']
-        except TypeError:
-            return []
+        tb = self.real_content.find('a', {'class': 'self', 'name': 'tb'})
+        if tb:
+            return tb['href']
+        else:
+            return None
 
     @property
     def url(self):
@@ -67,7 +70,7 @@ class AnondArticle:
     @property
     def datetime(self):
         '''記事の投稿日時を返す'''
-        return datetime.strptime(self.id, '%Y%m%d%H%M%S')
+        return self._dt
 
 
 class AnondBotDaemon:
@@ -140,14 +143,25 @@ class AnondBotDaemon:
             sys.exit(1)
 
     def get_anond_articles(self):
-        '''新着記事の一覧を取得し古い順にジェネレータで返す'''
+        '''新着記事の一覧を取得し古い順にリストで返す'''
         self.output('fetching {}'.format(self.ANOND_FEED_URL))
         doc = requests.get(self.ANOND_FEED_URL)
         self.output('fetching finished.')
 
         soup = BeautifulSoup(doc.content, 'html.parser')
-        return (AnondArticle(item['rdf:resource'], output=output)
-                for item in reversed(soup.find_all('rdf:li')))
+        result = []
+        for item in reversed(soup.find_all('item')):
+            url = item.link.string
+            dt = datetime.strptime(
+                item.find('dc:date').string.replace(':', ''),
+                '%Y-%m-%dT%H%M%S%z'
+            )
+            feed_content = item.find('content:encoded').string
+
+            article = AnondArticle(url, dt, feed_content, output=self.output)
+            result.append(article)
+
+        return result
 
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
