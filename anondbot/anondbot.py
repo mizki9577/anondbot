@@ -33,16 +33,16 @@ class AnondArticle:
             try:
                 doc = requests.get(self.url)
             except (requests.ConnectionError, requests.TooManyRedirects) as e:
-                self.output(str(e))
+                self.output(e)
                 raise e
             except (requests.HTTPError, requests.Timeout) as e:
-                self.output(str(e))
+                self.output(e)
                 self.output('retrying...')
             else:
                 try:
                     doc.raise_for_status()
                 except requests.HTTPError:
-                    self.output(str(e))
+                    self.output(e)
                     raise(e)
                 else:
                     break
@@ -122,6 +122,7 @@ class AnondBotDaemon:
         self.pid_file_path = self.config['config']['pid_file_path']
 
     def output(self, value):
+        value = str(value)
         if self.daemonize:
             syslog.syslog(value)
         elif not self.quiet:
