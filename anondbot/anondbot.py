@@ -32,11 +32,20 @@ class AnondArticle:
         while True:
             try:
                 doc = requests.get(self.url)
-                doc.raise_for_status()
-            except requests.RequestException:
-                self.output('An error occured. Retrying to fetch...')
+            except (requests.ConnectionError, requests.TooManyRedirects) as e:
+                self.output(str(e))
+                raise e
+            except (requests.HTTPError, requests.Timeout) as e:
+                self.output(str(e))
+                self.output('retrying...')
             else:
-                break
+                try:
+                    doc.raise_for_status()
+                except requests.HTTPError:
+                    self.output(str(e))
+                    raise(e)
+                else:
+                    break
 
         self.real_content = BeautifulSoup(doc.content, 'html.parser')
         self.fetched = True
