@@ -41,7 +41,7 @@ class AnondArticle:
             else:
                 try:
                     doc.raise_for_status()
-                except requests.HTTPError:
+                except requests.HTTPError as e:
                     self.output(e)
                     raise(e)
                 else:
