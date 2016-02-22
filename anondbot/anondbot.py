@@ -81,6 +81,12 @@ class AnondArticle:
         '''記事の投稿日時を返す'''
         return self._dt
 
+    def __hash__(self):
+        return hash(self.url)
+
+    def __eq__(self, other):
+        return self.url == other.url
+
 
 class AnondBotDaemon:
 
