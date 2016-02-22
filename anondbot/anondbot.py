@@ -17,10 +17,13 @@ class AnondArticle:
     はてな匿名ダイアリーの記事を表現するクラス
     '''
 
-    def __init__(self, url, dt, feed_content, output):
-        self._url = url
-        self._dt = dt
-        self.feed_content = BeautifulSoup(feed_content, 'html.parser')
+    def __init__(self, item, output):
+        self._url = item.link.string
+        self._dt = datetime.strptime(
+            item.find('dc:date').string.replace(':', ''),
+            '%Y-%m-%dT%H%M%S%z'
+        )
+        self.feed_content = BeautifulSoup(item.find('content:encoded').string, 'http.parser')
         self.output = output
         self.fetched = False
 
@@ -167,14 +170,7 @@ class AnondBotDaemon:
         soup = BeautifulSoup(doc.content, 'html.parser')
         result = []
         for item in reversed(soup.find_all('item')):
-            url = item.link.string
-            dt = datetime.strptime(
-                item.find('dc:date').string.replace(':', ''),
-                '%Y-%m-%dT%H%M%S%z'
-            )
-            feed_content = item.find('content:encoded').string
-
-            article = AnondArticle(url, dt, feed_content, output=self.output)
+            article = AnondArticle(item, output=self.output)
             result.append(article)
 
         return result
