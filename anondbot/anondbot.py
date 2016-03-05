@@ -20,7 +20,9 @@ class AnondArticle:
     def __init__(self, item, output):
         self._url = item.link.string
         self._dt = iso8601.parse_date(item.find('dc:date').string)
-        self.feed_content = BeautifulSoup(item.find('content:encoded').string, 'html.parser')
+        self.feed_content = BeautifulSoup(
+            item.find('content:encoded').string,
+            'html.parser')
         self.output = output
         self.fetched = False
 
