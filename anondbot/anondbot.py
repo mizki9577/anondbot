@@ -23,7 +23,7 @@ class AnondArticle:
             item.find('dc:date').string.replace(':', ''),
             '%Y-%m-%dT%H%M%S%z'
         )
-        self.feed_content = BeautifulSoup(item.find('content:encoded').string, 'http.parser')
+        self.feed_content = BeautifulSoup(item.find('content:encoded').string, 'html.parser')
         self.output = output
         self.fetched = False
 
