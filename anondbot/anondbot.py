@@ -4,6 +4,7 @@ import sys
 import syslog
 import time
 import traceback
+import urllib.parse
 
 import requests
 import iso8601
@@ -57,6 +58,8 @@ class AnondArticle:
     @property
     def title(self):
         '''記事タイトルを返す'''
+        if re.search(r'^(■|\s+)$', self._title):
+            return ''
         return self._title
 
     @property
@@ -66,13 +69,16 @@ class AnondArticle:
 
     @property
     def trackback_url(self):
-        '''トラックバック先の URL を返す'''
-        self.fetch()
-        tb = self.real_content.find('a', {'class': 'self', 'name': 'tb'})
-        if tb:
-            return tb['href']
-        else:
-            return None
+        '''トラックバック先の記事があれば True を返す'''
+        if self.is_anond_article_url(self.title):
+            return True
+
+        links = self.feed_content.find_all('a')
+        for link in links:
+            if self.is_anond_article_url(link.href):
+                return True
+
+        return False
 
     @property
     def url(self):
@@ -88,6 +94,12 @@ class AnondArticle:
     def datetime(self):
         '''記事の投稿日時を返す'''
         return self._dt
+
+    @staticmethod
+    def is_anond_article_url(url):
+        '''はてな匿名ダイアリーの記事を表す URL であれば True を返す'''
+        _, netloc, path, _, _, _ = urllib.parse.urlparse(url)
+        return netloc == 'anond.hatelabo.jp' and re.search(r'^\/[0-9]+$', path)
 
     def __hash__(self):
         return hash(self.url)
@@ -200,16 +212,19 @@ class AnondBotDaemon:
                 max_body_length = (
                     self.twitter_config['tweet_length_limit']
                     - self.twitter_config['short_url_length']
-                    - len(article.title)
-                    - 4  # 本文ダブルクォート*2 + タイトルと本文とURLの間のスペース*2
+                    - 3  # 本文ダブルクォート*2 + 本文とURLの間のスペース
                 )
-                body = re.sub(r'\s{2,}', ' ', article.body.strip())
-                if len(article.body) > max_body_length:
-                    body = body[:max_body_length-3] + '...'
-                body = re.sub(r'\s{2,}', ' ', body)
+                if article.title != '':
+                    max_body_length -= len(article.title) + 1  # タイトルと本文の間のスペース
 
-                self.post_twitter('{} "{}" {}'.format(
-                    article.title, body, article.url))
+                body = re.sub(r'\s{2,}', ' ', article.body.strip())
+                if len(body) > max_body_length:
+                    body = body[:max_body_length-3] + '...'
+
+                status = '"{}" {}'.format(body, article.url)
+                if article.title != '':
+                    status = article.title + ' ' + status
+                self.post_twitter(status)
 
             # 設定の保存
             self.config['config']['last_article_timestamp'] = str(
