@@ -1,11 +1,11 @@
 from configparser import ConfigParser
-from datetime import datetime
 import sys
 import syslog
 import time
 import traceback
 
 import requests
+import iso8601
 from requests_oauthlib import OAuth1
 from bs4 import BeautifulSoup
 from daemon import daemon, pidfile
@@ -19,10 +19,7 @@ class AnondArticle:
 
     def __init__(self, item, output):
         self._url = item.link.string
-        self._dt = datetime.strptime(
-            item.find('dc:date').string.replace(':', ''),
-            '%Y-%m-%dT%H%M%S%z'
-        )
+        self._dt = iso8601.parse_date(item.find('dc:date').string)
         self.feed_content = BeautifulSoup(item.find('content:encoded').string, 'html.parser')
         self.output = output
         self.fetched = False

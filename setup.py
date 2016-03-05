@@ -14,6 +14,7 @@ setuptools.setup(
         'BeautifulSoup4',
         'python-daemon',
         'docopt',
+        'iso8601',
     ],
     entry_points={
         'console_scripts': [
