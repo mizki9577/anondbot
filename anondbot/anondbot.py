@@ -1,4 +1,5 @@
 from configparser import ConfigParser
+import re
 import sys
 import syslog
 import time
@@ -23,6 +24,7 @@ class AnondArticle:
         self.feed_content = BeautifulSoup(
             item.find('content:encoded').string,
             'html.parser')
+        self._title = item.find('title').string
         self.output = output
         self.fetched = False
 
@@ -55,8 +57,12 @@ class AnondArticle:
     @property
     def title(self):
         '''記事タイトルを返す'''
-        self.fetch()
-        return self.real_content.find('title').string
+        return self._title
+
+    @property
+    def body(self):
+        '''記事本文を返す'''
+        return ' '.join(self.feed_content.strings)
 
     @property
     def trackback_url(self):
@@ -98,6 +104,7 @@ class AnondBotDaemon:
 
     CONFIG_FILE_PATH = '/etc/anondbot.conf'
     STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
+    HELP_CONFIGURATION_URL = 'https://api.twitter.com/1.1/help/configuration.json'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
 
     def __init__(self, config_file_path,
@@ -128,6 +135,11 @@ class AnondBotDaemon:
         self.interval_sec = int(
             self.config['config']['update_interval'])
         self.pid_file_path = self.config['config']['pid_file_path']
+
+        # Twitter の設定を取得
+        r = requests.get(self.HELP_CONFIGURATION_URL, auth=self.oauth)
+        self.twitter_config = r.json()
+        self.twitter_config['tweet_length_limit'] = 140
 
     def output(self, value):
         value = str(value)
@@ -185,7 +197,19 @@ class AnondBotDaemon:
             self.last_article_timestamp = int(article.datetime.timestamp())
 
             if not article.trackback_url:
-                self.post_twitter('{} {}'.format(article.title, article.url))
+                max_body_length = (
+                    self.twitter_config['tweet_length_limit']
+                    - self.twitter_config['short_url_length']
+                    - len(article.title)
+                    - 4  # 本文ダブルクォート*2 + タイトルと本文とURLの間のスペース*2
+                )
+                body = re.sub(r'\s{2,}', ' ', article.body.strip())
+                if len(article.body) > max_body_length:
+                    body = body[:max_body_length-3] + '...'
+                body = re.sub(r'\s{2,}', ' ', body)
+
+                self.post_twitter('{} "{}" {}'.format(
+                    article.title, body, article.url))
 
             # 設定の保存
             self.config['config']['last_article_timestamp'] = str(
