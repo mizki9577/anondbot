@@ -38,7 +38,7 @@ class AnondArticle:
     @property
     def body(self):
         '''記事本文を返す'''
-        return ' '.join(self.feed_content.strings)
+        return self.feed_content.get_text()
 
     @property
     def trackback_url(self):
@@ -190,7 +190,7 @@ class AnondBotDaemon:
                 if article.title != '':
                     max_body_length -= len(article.title) + 1  # タイトルと本文の間のスペース
 
-                body = re.sub(r'\s{2,}', ' ', article.body.strip())
+                body = re.sub(r'\s+', ' ', article.body.strip())
                 if len(body) > max_body_length:
                     body = body[:max_body_length-3] + '...'
 
