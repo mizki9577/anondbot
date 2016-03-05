@@ -27,33 +27,6 @@ class AnondArticle:
             'html.parser')
         self._title = item.find('title').string
         self.output = output
-        self.fetched = False
-
-    def fetch(self):
-        '''記事を取得する'''
-        if self.fetched:
-            return
-
-        while True:
-            try:
-                doc = requests.get(self.url)
-            except (requests.ConnectionError, requests.TooManyRedirects) as e:
-                self.output(e)
-                raise e
-            except (requests.HTTPError, requests.Timeout) as e:
-                self.output(e)
-                self.output('retrying...')
-            else:
-                try:
-                    doc.raise_for_status()
-                except requests.HTTPError as e:
-                    self.output(e)
-                    raise(e)
-                else:
-                    break
-
-        self.real_content = BeautifulSoup(doc.content, 'html.parser')
-        self.fetched = True
 
     @property
     def title(self):
