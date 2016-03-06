@@ -138,6 +138,9 @@ class AnondBotDaemon:
         except SystemExit as e:
             self.logger.info('exiting request received. exiting...')
             raise e
+        except KeyboardInterrupt as e:
+            self.logger.info('exiting request received. exiting...')
+            sys.exit()
         except:
             self.logger.critical(traceback.format_exc())
             self.logger.critical('error(s) occured. exiting...')
