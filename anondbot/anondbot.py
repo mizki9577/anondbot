@@ -19,13 +19,11 @@ class AnondArticle:
     はてな匿名ダイアリーの記事を表現するクラス
     '''
 
-    def __init__(self, item, output):
-        self._url = item.link.string
-        self._dt = iso8601.parse_date(item.find('dc:date').string)
-        self.content = BeautifulSoup(
-            item.find('content:encoded').string,
-            'html.parser')
-        self._title = item.find('title').string
+    def __init__(self, output, title, url, dt, content):
+        self._url = url
+        self._dt = dt
+        self.content = BeautifulSoup(content, 'html.parser')
+        self._title = title
         self.output = output
 
     @property
@@ -165,7 +163,13 @@ class AnondBotDaemon:
 
         soup = BeautifulSoup(doc.content, 'html.parser')
         for item in reversed(soup.find_all('item')):
-            yield AnondArticle(item, output=self.output)
+            yield AnondArticle(
+                self.output,
+                title=item.find('title').string,
+                content=item.find('content:encoded').string,
+                url=item.find('link').string,
+                dt=iso8601.parse_date(item.find('dc:date').string)
+            )
 
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
