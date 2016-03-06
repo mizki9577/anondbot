@@ -1,7 +1,7 @@
 import json
+import logging
 import re
 import sys
-import syslog
 import time
 import traceback
 import urllib.parse
@@ -19,12 +19,12 @@ class AnondArticle:
     はてな匿名ダイアリーの記事を表現するクラス
     '''
 
-    def __init__(self, output, title, url, dt, content):
+    def __init__(self, title, url, dt, content):
         self._url = url
         self._dt = dt
         self._content = BeautifulSoup(content, 'html.parser')
         self._title = title
-        self.output = output
+        self.logger = logging.getLogger('anondbot')
 
     @property
     def title(self):
@@ -111,12 +111,13 @@ class AnondBotDaemon:
         self.twitter_config = self.twitter_api.help_configuration()
         self.twitter_config['tweet_length_limit'] = 140
 
-    def output(self, value):
-        value = str(value)
+        # ロガーの設定
+        self.logger = logging.getLogger('anondbot')
+        self.logger.setLevel(logging.DEBUG)
         if self.daemonize:
-            syslog.syslog(value)
+            self.logger.addHandler(logging.handlers.SysLogHandler())
         elif not self.quiet:
-            print(value, file=sys.stdout)
+            self.logger.addHandler(logging.StreamHandler())
 
     def run(self):
         '''デーモンを開始する'''
@@ -135,23 +136,22 @@ class AnondBotDaemon:
                     self.update()
                     time.sleep(self.interval_sec)
         except SystemExit as e:
-            self.output('exiting request received. exiting...')
+            self.logger.info('exiting request received. exiting...')
             raise e
         except:
-            self.output(traceback.format_exc())
-            self.output('error(s) occured. exiting...')
+            self.logger.critical(traceback.format_exc())
+            self.logger.critical('error(s) occured. exiting...')
             sys.exit(1)
 
     def get_anond_articles(self):
         '''新着記事の一覧を取得し古い順に返すジェネレータを返す'''
-        self.output('fetching {}'.format(self.ANOND_FEED_URL))
+        self.logger.info('fetching {}'.format(self.ANOND_FEED_URL))
         doc = requests.get(self.ANOND_FEED_URL)
-        self.output('fetching finished.')
+        self.logger.info('fetching finished.')
 
         soup = BeautifulSoup(doc.content, 'html.parser')
         for item in reversed(soup.find_all('item')):
             yield AnondArticle(
-                self.output,
                 title=item.find('title').string,
                 content=item.find('content:encoded').string,
                 url=item.find('link').string,
@@ -194,7 +194,7 @@ class AnondBotDaemon:
     def post_twitter(self, status):
         if not self.dry_run:
             self.twitter_api.statuses_update(status)
-        self.output(status)
+        self.logger.info(status)
 
 
 class TwitterAPI:
