@@ -22,7 +22,7 @@ class AnondArticle:
     def __init__(self, output, title, url, dt, content):
         self._url = url
         self._dt = dt
-        self.content = BeautifulSoup(content, 'html.parser')
+        self._content = BeautifulSoup(content, 'html.parser')
         self._title = title
         self.output = output
 
@@ -36,7 +36,7 @@ class AnondArticle:
     @property
     def body(self):
         '''記事本文を返す'''
-        return self.content.get_text()
+        return self._content.get_text()
 
     @property
     def trackback_url(self):
@@ -44,7 +44,7 @@ class AnondArticle:
         if self.is_anond_article_url(self.title):
             return True
 
-        links = self.content.find_all('a')
+        links = self._content.find_all('a')
         for link in links:
             if self.is_anond_article_url(link['href']):
                 return True
