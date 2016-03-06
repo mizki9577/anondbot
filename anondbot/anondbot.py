@@ -86,8 +86,6 @@ class AnondBotDaemon:
     '''
 
     CONFIG_FILE_PATH = '/etc/anondbotrc'
-    STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
-    HELP_CONFIGURATION_URL = 'https://api.twitter.com/1.1/help/configuration.json'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
 
     def __init__(self, config_file_path,
@@ -102,14 +100,7 @@ class AnondBotDaemon:
             self.config = json.load(f)
 
         # Twitter 関係
-        consumer_key = self.config['twitter']['consumer_key']
-        consumer_secret = self.config['twitter']['consumer_secret']
-        access_token = self.config['twitter']['access_token']
-        access_secret = self.config['twitter']['access_secret']
-        self.oauth = OAuth1(client_key=consumer_key,
-                            client_secret=consumer_secret,
-                            resource_owner_key=access_token,
-                            resource_owner_secret=access_secret)
+        self.twitter_api = TwitterAPI(**self.config['twitter'])
 
         # デーモンの設定
         self.last_article_timestamp = self.config['config']['last_article_timestamp']
@@ -117,8 +108,7 @@ class AnondBotDaemon:
         self.pid_file_path = self.config['config']['pid_file_path']
 
         # Twitter の設定を取得
-        r = requests.get(self.HELP_CONFIGURATION_URL, auth=self.oauth)
-        self.twitter_config = r.json()
+        self.twitter_config = self.twitter_api.help_configuration()
         self.twitter_config['tweet_length_limit'] = 140
 
     def output(self, value):
@@ -203,7 +193,34 @@ class AnondBotDaemon:
 
     def post_twitter(self, status):
         if not self.dry_run:
-            requests.post(self.STATUSES_UPDATE_URL,
-                          params={'status': status},
-                          auth=self.oauth)
+            self.twitter_api.statuses_update(status)
         self.output(status)
+
+
+class TwitterAPI:
+
+    '''
+    簡易 Twitter API
+    '''
+
+    STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
+    HELP_CONFIGURATION_URL = 'https://api.twitter.com/1.1/help/configuration.json'
+
+    def __init__(self,
+                 consumer_key, consumer_secret,
+                 access_token, access_secret):
+        self.oauth = OAuth1(client_key=consumer_key,
+                            client_secret=consumer_secret,
+                            resource_owner_key=access_token,
+                            resource_owner_secret=access_secret)
+
+    def call_api(self, method, url, params=None):
+        r = requests.request(method, url, params=params, auth=self.oauth)
+        return r.json()
+
+    def statuses_update(self, status):
+        return self.call_api('POST', self.STATUSES_UPDATE_URL,
+                             params={'status': status})
+
+    def help_configuration(self):
+        return self.call_api('GET', self.HELP_CONFIGURATION_URL)
