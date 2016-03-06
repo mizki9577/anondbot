@@ -1,4 +1,4 @@
-from configparser import ConfigParser
+import json
 import re
 import sys
 import syslog
@@ -85,7 +85,7 @@ class AnondBotDaemon:
     はてな匿名ダイアリー通知bot
     '''
 
-    CONFIG_FILE_PATH = '/etc/anondbot.conf'
+    CONFIG_FILE_PATH = '/etc/anondbotrc'
     STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
     HELP_CONFIGURATION_URL = 'https://api.twitter.com/1.1/help/configuration.json'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
@@ -98,9 +98,8 @@ class AnondBotDaemon:
 
         # 設定読み込み
         self.config_file_path = config_file_path
-        self.config = ConfigParser()
         with open(self.config_file_path, 'r') as f:
-            self.config.read_file(f)
+            self.config = json.load(f)
 
         # Twitter 関係
         consumer_key = self.config['twitter']['consumer_key']
@@ -113,10 +112,8 @@ class AnondBotDaemon:
                             resource_owner_secret=access_secret)
 
         # デーモンの設定
-        self.last_article_timestamp = int(
-            self.config['config']['last_article_timestamp'])
-        self.interval_sec = int(
-            self.config['config']['update_interval'])
+        self.last_article_timestamp = self.config['config']['last_article_timestamp']
+        self.interval_sec = self.config['config']['update_interval']
         self.pid_file_path = self.config['config']['pid_file_path']
 
         # Twitter の設定を取得
@@ -179,7 +176,7 @@ class AnondBotDaemon:
             if self.last_article_timestamp >= article.datetime.timestamp():
                 continue
 
-            self.last_article_timestamp = int(article.datetime.timestamp())
+            self.last_article_timestamp = article.datetime.timestamp()
 
             if not article.trackback_url:
                 max_body_length = (
@@ -200,10 +197,9 @@ class AnondBotDaemon:
                 self.post_twitter(status)
 
             # 設定の保存
-            self.config['config']['last_article_timestamp'] = str(
-                self.last_article_timestamp)
+            self.config['config']['last_article_timestamp'] = self.last_article_timestamp
             with open(self.config_file_path, 'w') as f:
-                self.config.write(f)
+                json.dump(self.config, f, indent='\t')
 
     def post_twitter(self, status):
         if not self.dry_run:
