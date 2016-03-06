@@ -48,7 +48,7 @@ class AnondArticle:
 
         links = self.content.find_all('a')
         for link in links:
-            if self.is_anond_article_url(link.href):
+            if self.is_anond_article_url(link['href']):
                 return True
 
         return False
