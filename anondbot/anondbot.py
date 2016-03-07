@@ -103,7 +103,8 @@ class AnondBotDaemon:
         self.twitter_api = TwitterAPI(**self.config['twitter'])
 
         # デーモンの設定
-        self.last_article_timestamp = self.config['config']['last_article_timestamp']
+        self.last_article_timestamp = \
+            self.config['config']['last_article_timestamp']
         self.interval_sec = self.config['config']['update_interval']
         self.pid_file_path = self.config['config']['pid_file_path']
 
@@ -190,7 +191,8 @@ class AnondBotDaemon:
                 self.post_twitter(status)
 
             # 設定の保存
-            self.config['config']['last_article_timestamp'] = self.last_article_timestamp
+            self.config['config']['last_article_timestamp'] = \
+                self.last_article_timestamp
             with open(self.config_file_path, 'w') as f:
                 json.dump(self.config, f, indent='\t')
 
@@ -207,7 +209,8 @@ class TwitterAPI:
     '''
 
     STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
-    HELP_CONFIGURATION_URL = 'https://api.twitter.com/1.1/help/configuration.json'
+    HELP_CONFIGURATION_URL = \
+        'https://api.twitter.com/1.1/help/configuration.json'
 
     def __init__(self,
                  consumer_key, consumer_secret,
