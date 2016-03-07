@@ -88,6 +88,7 @@ class AnondBotDaemon:
 
     CONFIG_FILE_PATH = '/etc/anondbotrc'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
+    ANOND_TOP_URL = 'http://anond.hatelabo.jp/'
 
     def __init__(self, config_file_path,
                  daemonize=None, dry_run=False, quiet=False):
@@ -162,6 +163,16 @@ class AnondBotDaemon:
                 url=item.find('link').string,
                 dt=iso8601.parse_date(item.find('dc:date').string)
             )
+
+    def get_hot_entries(self):
+        '''ホッテントリの URL を返すジェネレータを返す'''
+        self.logger.info('fetching {}'.format(self.ANOND_TOP_URL))
+        doc = requests.get(self.ANOND_TOP_URL)
+        self.logger.info('fetching finished.')
+
+        soup = BeautifulSoup(doc.content, 'html.parser')
+        for item in soup.select('div#hotentriesblock > ul > li > a'):
+            yield urllib.parse.urljoin(self.ANOND_TOP_URL, item['href'])
 
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
