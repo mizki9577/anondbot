@@ -186,9 +186,9 @@ class AnondBotDaemon:
                 self.twitter_config['tweet_length_limit']
                 - self.twitter_config['short_url_length']
             )
-            if article.title != '':
+            if len(article.title):
                 max_body_length -= len(article.title) + 1  # タイトルの後ろのスペース+1
-            if article.body != '':
+            if len(article.body):
                 max_body_length -= 3  # 本文の後ろのスペース+1, ダブルクォート+2
 
                 body = re.sub(r'\s+', ' ', article.body.strip())
@@ -197,9 +197,9 @@ class AnondBotDaemon:
 
             # Twitter に投稿
             status = article.url
-            if article.body != '':
+            if len(article.body):
                 status = '"' + body + '" ' + status
-            if article.title != '':
+            if len(article.title):
                 status = article.title + ' ' + status
             self.post_twitter(status)
 
