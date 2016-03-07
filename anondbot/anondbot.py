@@ -167,28 +167,38 @@ class AnondBotDaemon:
         articles = self.get_anond_articles()
 
         for article in articles:
+            # 既に Twitter に投稿したものより古い記事はスキップ
             if self.last_article_timestamp >= article.datetime.timestamp():
                 continue
 
             self.last_article_timestamp = article.datetime.timestamp()
 
-            if not article.has_trackback:
-                max_body_length = (
-                    self.twitter_config['tweet_length_limit']
-                    - self.twitter_config['short_url_length']
-                    - 3  # 本文ダブルクォート*2 + 本文とURLの間のスペース
-                )
-                if article.title != '':
-                    max_body_length -= len(article.title) + 1  # タイトルと本文の間のスペース
+            # トラックバックだったらスキップ
+            if article.has_trackback:
+                continue
 
-                body = re.sub(r'\s+', ' ', article.body.strip())
-                if len(body) > max_body_length:
-                    body = body[:max_body_length-3] + '...'
+            # 本文がNGパターンにマッチしたらスキップ
+            if any(re.search(pattern, article.body) is not None
+                   for pattern in self.config['config']['ng_patterns']):
+                continue
 
-                status = '"{}" {}'.format(body, article.url)
-                if article.title != '':
-                    status = article.title + ' ' + status
-                self.post_twitter(status)
+            max_body_length = (
+                self.twitter_config['tweet_length_limit']
+                - self.twitter_config['short_url_length']
+                - 3  # 本文ダブルクォート*2 + 本文とURLの間のスペース
+            )
+            if article.title != '':
+                max_body_length -= len(article.title) + 1  # タイトルと本文の間のスペース
+
+            body = re.sub(r'\s+', ' ', article.body.strip())
+            if len(body) > max_body_length:
+                body = body[:max_body_length-3] + '...'
+
+            # Twitter に投稿
+            status = '"{}" {}'.format(body, article.url)
+            if article.title != '':
+                status = article.title + ' ' + status
+            self.post_twitter(status)
 
             # 設定の保存
             self.config['config']['last_article_timestamp'] = \
