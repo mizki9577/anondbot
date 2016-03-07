@@ -173,8 +173,9 @@ class AnondBotDaemon:
         self.logger.info('fetching finished.')
 
         soup = BeautifulSoup(doc.content, 'html.parser')
-        for item in soup.select('div#hotentriesblock > ul > li > a'):
-            yield urllib.parse.urljoin(self.ANOND_TOP_URL, item['href'])
+        for item in soup.select('div#hotentriesblock > ul > li'):
+            url = item.find('a')['href']
+            yield urllib.parse.urljoin(self.ANOND_TOP_URL, url)
 
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
