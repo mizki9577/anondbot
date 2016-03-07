@@ -185,17 +185,20 @@ class AnondBotDaemon:
             max_body_length = (
                 self.twitter_config['tweet_length_limit']
                 - self.twitter_config['short_url_length']
-                - 3  # 本文ダブルクォート*2 + 本文とURLの間のスペース
             )
             if article.title != '':
-                max_body_length -= len(article.title) + 1  # タイトルと本文の間のスペース
+                max_body_length -= len(article.title) + 1  # タイトルの後ろのスペース+1
+            if article.body != '':
+                max_body_length -= 3  # 本文の後ろのスペース+1, ダブルクォート+2
 
-            body = re.sub(r'\s+', ' ', article.body.strip())
-            if len(body) > max_body_length:
-                body = body[:max_body_length-3] + '...'
+                body = re.sub(r'\s+', ' ', article.body.strip())
+                if len(body) > max_body_length:
+                    body = body[:max_body_length-3] + '...'
 
             # Twitter に投稿
-            status = '"{}" {}'.format(body, article.url)
+            status = article.url
+            if article.body != '':
+                status = '"' + body + '" ' + status
             if article.title != '':
                 status = article.title + ' ' + status
             self.post_twitter(status)
