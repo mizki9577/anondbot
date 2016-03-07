@@ -10,7 +10,7 @@ import urllib.parse
 import requests
 import iso8601
 from requests_oauthlib import OAuth1
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from daemon import daemon, pidfile
 
 
@@ -108,6 +108,7 @@ class AnondBotDaemon:
 
         # デーモンの設定
         self.last_article_timestamp = self.config['last_article_timestamp']
+        self.last_hot_entries = set(self.config['last_hot_entries'])
         self.interval_sec = self.config['update_interval']
         self.pid_file_path = self.config['pid_file_path']
 
@@ -174,7 +175,7 @@ class AnondBotDaemon:
         doc = requests.get(self.ANOND_TOP_URL)
         self.logger.info('fetching finished.')
 
-        soup = BeautifulSoup(doc.content, 'html.parser')
+        soup = BeautifulSoup(doc.content, 'html5lib')
         for item in soup.select('div#hotentriesblock > ul > li'):
             url = item.find('a')['href']
             yield urllib.parse.urljoin(self.ANOND_TOP_URL, url)
@@ -206,6 +207,36 @@ class AnondBotDaemon:
             self.config['last_article_timestamp'] = self.last_article_timestamp
             with open(self.config_file_path, 'w') as f:
                 json.dump(self.config, f, indent='\t')
+
+        # ホッテントリ
+        hot_entries = set(self.get_hot_entries())
+        changed_hot_entries = self.last_hot_entries ^ hot_entries
+        self.last_hot_entries = hot_entries
+
+        for url in changed_hot_entries:
+            doc = requests.get(url)
+            soup = BeautifulSoup(doc.content, 'html5lib')
+
+            title_elements = soup.select_one('h3 > a').next_siblings
+            title = '【注目エントリ】' + ''.join(e.string for e in title_elements)
+
+            body_strs = []
+            targets = soup.find('h3').next_sibling.next_siblings
+            goal = soup.find('div', id='rectangle-middle')
+            for target in targets:
+                if target == goal:
+                    break
+
+                if not isinstance(target, NavigableString):
+                    body_strs.append(target.get_text())
+
+            body = ' '.join(body_strs)
+
+            self.post_twitter(title, body, url)
+
+        self.config['last_hot_entries'] = list(self.last_hot_entries)
+        with open(self.config_file_path, 'w') as f:
+            json.dump(self.config, f, indent='\t')
 
     def post_twitter(self, title, body, url):
         max_body_length = (

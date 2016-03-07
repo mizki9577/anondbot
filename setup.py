@@ -15,6 +15,7 @@ setuptools.setup(
         'python-daemon',
         'docopt',
         'iso8601',
+        'html5lib',
     ],
     entry_points={
         'console_scripts': [
