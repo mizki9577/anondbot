@@ -39,7 +39,7 @@ class AnondArticle:
         return self._content.get_text()
 
     @property
-    def trackback_url(self):
+    def has_trackback(self):
         '''トラックバック先の記事があれば True を返す'''
         if self.is_anond_article_url(self.title):
             return True
@@ -171,7 +171,7 @@ class AnondBotDaemon:
 
             self.last_article_timestamp = article.datetime.timestamp()
 
-            if not article.trackback_url:
+            if not article.has_trackback:
                 max_body_length = (
                     self.twitter_config['tweet_length_limit']
                     - self.twitter_config['short_url_length']
