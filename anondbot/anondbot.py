@@ -44,6 +44,8 @@ class AnondArticle:
         '''トラックバック先の記事があれば True を返す'''
         if self.is_anond_article_url(self.title):
             return True
+        if re.search(r'^anond:\d+$', self.title, re.ASCII):
+            return True
 
         links = self._content.find_all('a')
         for link in links:
