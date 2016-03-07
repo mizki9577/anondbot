@@ -103,10 +103,9 @@ class AnondBotDaemon:
         self.twitter_api = TwitterAPI(**self.config['twitter'])
 
         # デーモンの設定
-        self.last_article_timestamp = \
-            self.config['config']['last_article_timestamp']
-        self.interval_sec = self.config['config']['update_interval']
-        self.pid_file_path = self.config['config']['pid_file_path']
+        self.last_article_timestamp = self.config['last_article_timestamp']
+        self.interval_sec = self.config['update_interval']
+        self.pid_file_path = self.config['pid_file_path']
 
         # Twitter の設定を取得
         self.twitter_config = self.twitter_api.help_configuration()
@@ -179,7 +178,7 @@ class AnondBotDaemon:
 
             # 本文がNGパターンにマッチしたらスキップ
             if any(re.search(pattern, article.body) is not None
-                   for pattern in self.config['config']['ng_patterns']):
+                   for pattern in self.config['ng_patterns']):
                 continue
 
             max_body_length = (
@@ -204,8 +203,7 @@ class AnondBotDaemon:
             self.post_twitter(status)
 
             # 設定の保存
-            self.config['config']['last_article_timestamp'] = \
-                self.last_article_timestamp
+            self.config['last_article_timestamp'] = self.last_article_timestamp
             with open(self.config_file_path, 'w') as f:
                 json.dump(self.config, f, indent='\t')
 
