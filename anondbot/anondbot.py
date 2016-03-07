@@ -42,12 +42,14 @@ class AnondArticle:
     @property
     def has_trackback(self):
         '''トラックバック先の記事があれば True を返す'''
-        if self.is_anond_article_url(self.title):
+        title_url = urllib.parse.urljoin(self.url, self.title)
+        if self.is_anond_article_url(title_url):
             return True
 
         links = self._content.find_all('a')
         for link in links:
-            if self.is_anond_article_url(link['href']):
+            link_url = urllib.parse.urljoin(self.url, link['href'])
+            if self.is_anond_article_url(link_url):
                 return True
 
         return False
