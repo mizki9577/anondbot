@@ -196,33 +196,34 @@ class AnondBotDaemon:
                    for pattern in self.config['ng_patterns']):
                 continue
 
-            max_body_length = (
-                self.twitter_config['tweet_length_limit']
-                - self.twitter_config['short_url_length']
-            )
-            if len(article.title):
-                max_body_length -= len(article.title) + 1  # タイトルの後ろのスペース+1
-            if len(article.body):
-                max_body_length -= 3  # 本文の後ろのスペース+1, ダブルクォート+2
-
-                body = re.sub(r'\s+', ' ', article.body.strip())
-                if len(body) > max_body_length:
-                    body = body[:max_body_length-3] + '...'
-
             # Twitter に投稿
-            status = article.url
-            if len(article.body):
-                status = '"' + body + '" ' + status
-            if len(article.title):
-                status = article.title + ' ' + status
-            self.post_twitter(status)
+            self.post_twitter(article.title, article.body, article.url)
 
             # 設定の保存
             self.config['last_article_timestamp'] = self.last_article_timestamp
             with open(self.config_file_path, 'w') as f:
                 json.dump(self.config, f, indent='\t')
 
-    def post_twitter(self, status):
+    def post_twitter(self, title, body, url):
+        max_body_length = (
+            self.twitter_config['tweet_length_limit']
+            - self.twitter_config['short_url_length']
+        )
+        if len(title):
+            max_body_length -= len(title) + 1  # タイトルの後ろのスペース+1
+        if len(body):
+            max_body_length -= 3  # 本文の後ろのスペース+1, ダブルクォート+2
+
+            body = re.sub(r'\s+', ' ', body.strip())
+            if len(body) > max_body_length:
+                body = body[:max_body_length-3] + '...'
+
+        status = url
+        if len(body):
+            status = '"' + body + '" ' + status
+        if len(title):
+            status = title + ' ' + status
+
         if not self.dry_run:
             self.twitter_api.statuses_update(status)
         self.logger.info(status)
