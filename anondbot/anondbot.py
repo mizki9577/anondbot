@@ -121,6 +121,8 @@ class AnondBotDaemon:
         else:
             if self.quiet:
                 self.logger.addHandler(logging.NullHandler())
+            else:
+                self.logger.addHandler(logging.StreamHandler())
 
     def run(self):
         '''デーモンを開始する'''
