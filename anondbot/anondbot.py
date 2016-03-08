@@ -89,7 +89,6 @@ class AnondBotDaemon:
     はてな匿名ダイアリー通知bot
     '''
 
-    CONFIG_FILE_PATH = '/etc/anondbotrc'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
     ANOND_HOT_ENTRIES_URL = 'http://b.hatena.ne.jp/entrylist?sort=hot&url=http://anond.hatelabo.jp/&mode=rss'
 

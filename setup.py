@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='anondbot',
-    version='1.2.4',
+    version='1.2.5',
     author='Mizki SUZUMORI',
     author_email='mizki9577@gmail.com',
     description='Twitter bot daemon which notifies recent articles of Hatena Anonymous Diary.',
@@ -15,7 +15,6 @@ setuptools.setup(
         'python-daemon',
         'docopt',
         'iso8601',
-        'html5lib',
     ],
     entry_points={
         'console_scripts': [
