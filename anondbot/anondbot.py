@@ -135,8 +135,11 @@ class AnondBotDaemon:
 
         try:
             with daemon_context:
+                self.logger.debug('starting...')
                 while True:
+                    self.logger.debug('updating...')
                     self.update()
+                    self.logger.debug('updating done')
                     time.sleep(self.interval_sec)
         except SystemExit as e:
             self.logger.info('exiting request received. exiting...')
