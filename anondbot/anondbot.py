@@ -139,7 +139,8 @@ class AnondBotDaemon:
                 self.logger.debug('starting...')
                 while True:
                     self.logger.debug('updating...')
-                    self.update()
+                    self.check_recent_articles()
+                    self.check_hot_articles()
                     self.logger.debug('updating done')
                     time.sleep(self.interval_sec)
         except SystemExit as e:
@@ -188,7 +189,28 @@ class AnondBotDaemon:
         articles.sort(key=(lambda x: x.bookmark_count), reverse=True)
         return articles
 
-    def update(self):
+    def check_hot_entries(self):
+        '''ホットエントリを確認し Twitter に投稿する'''
+        hot_entries = {
+            article.url: article
+            for article in takewhile(
+                lambda x: x.bookmark_count >= self.config['hot_entry_threshold'],
+                self.get_hot_entries()
+            )
+        }
+        changed_hot_entry_urls = hot_entries.keys() - self.last_hot_entries
+        self.last_hot_entries = hot_entries.keys()
+
+        for url in changed_hot_entry_urls:
+            self.post_twitter('【注目エントリ】'
+                              + hot_entries[url].title,
+                              hot_entries[url].body, url)
+
+        self.config['last_hot_entries'] = list(self.last_hot_entries)
+        with open(self.config_file_path, 'w') as f:
+            json.dump(self.config, f, indent='\t')
+
+    def check_recent_articles(self):
         '''新着記事を確認し Twitter に投稿する'''
         articles = self.get_anond_articles()
 
@@ -215,24 +237,6 @@ class AnondBotDaemon:
             self.config['last_article_timestamp'] = self.last_article_timestamp
             with open(self.config_file_path, 'w') as f:
                 json.dump(self.config, f, indent='\t')
-
-        # ホッテントリ
-        hot_entries = {
-            article.url: article
-            for article in takewhile(
-                lambda x: x.bookmark_count >= self.config['hot_entry_bookmark_threshold'],
-                self.get_hot_entries()
-            )
-        }
-        changed_hot_entry_urls = hot_entries.keys() - self.last_hot_entries
-        self.last_hot_entries = hot_entries.keys()
-
-        for url in changed_hot_entry_urls:
-            self.post_twitter('【注目エントリ】' + hot_entries[url].title, hot_entries[url].body, url)
-
-        self.config['last_hot_entries'] = list(self.last_hot_entries)
-        with open(self.config_file_path, 'w') as f:
-            json.dump(self.config, f, indent='\t')
 
     def post_twitter(self, title, body, url):
         max_body_length = (
