@@ -6,11 +6,12 @@ import sys
 import time
 import traceback
 import urllib.parse
+from itertools import takewhile
 
 import requests
 import iso8601
 from requests_oauthlib import OAuth1
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup
 from daemon import daemon, pidfile
 
 
@@ -20,11 +21,12 @@ class AnondArticle:
     はてな匿名ダイアリーの記事を表現するクラス
     '''
 
-    def __init__(self, title, url, dt, content):
+    def __init__(self, title, url, dt, content, bookmark_count=None):
         self._url = url
         self._dt = dt
         self._content = BeautifulSoup(content, 'html.parser')
         self._title = title
+        self._bookmark_count = bookmark_count
         self.logger = logging.getLogger('anondbot')
 
     @property
@@ -69,17 +71,16 @@ class AnondArticle:
         '''記事の投稿日時を返す'''
         return self._dt
 
+    @property
+    def bookmark_count(self):
+        '''ブクマ数を返す'''
+        return self._bookmark_count
+
     @staticmethod
     def is_anond_article_url(url):
         '''はてな匿名ダイアリーの記事を表す URL であれば True を返す'''
         _, netloc, path, _, _, _ = urllib.parse.urlparse(url)
         return netloc == 'anond.hatelabo.jp' and re.search(r'^\/[0-9]+$', path)
-
-    def __hash__(self):
-        return hash(self.url)
-
-    def __eq__(self, other):
-        return self.url == other.url
 
 
 class AnondBotDaemon:
@@ -90,7 +91,7 @@ class AnondBotDaemon:
 
     CONFIG_FILE_PATH = '/etc/anondbotrc'
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
-    ANOND_TOP_URL = 'http://anond.hatelabo.jp/'
+    ANOND_HOT_ENTRIES_URL = 'http://b.hatena.ne.jp/entrylist?sort=hot&url=http://anond.hatelabo.jp/&mode=rss'
 
     def __init__(self, config_file_path,
                  daemonize=None, dry_run=False, quiet=False):
@@ -168,15 +169,24 @@ class AnondBotDaemon:
             )
 
     def get_hot_entries(self):
-        '''ホッテントリの URL を返すジェネレータを返す'''
-        self.logger.info('fetching {}'.format(self.ANOND_TOP_URL))
-        doc = requests.get(self.ANOND_TOP_URL)
+        '''注目エントリの一覧を取得しブクマ数順にリストで返す'''
+        self.logger.info('fetching {}'.format(self.ANOND_HOT_ENTRIES_URL))
+        doc = requests.get(self.ANOND_HOT_ENTRIES_URL)
         self.logger.info('fetching finished.')
 
-        soup = BeautifulSoup(doc.content, 'html5lib')
-        for item in soup.select('div#hotentriesblock > ul > li'):
-            url = item.find('a')['href']
-            yield urllib.parse.urljoin(self.ANOND_TOP_URL, url)
+        soup = BeautifulSoup(doc.content, 'html.parser')
+        items = soup.find_all('item')
+        articles = []
+        for item in items:
+            articles.append(AnondArticle(
+                title=item.find('title').string,
+                content=item.find('description').string,
+                url=item.find('link').string,
+                dt=iso8601.parse_date(item.find('dc:date').string),
+                bookmark_count=int(item.find('hatena:bookmarkcount').string)
+            ))
+        articles.sort(key=(lambda x: x.bookmark_count), reverse=True)
+        return articles
 
     def update(self):
         '''新着記事を確認し Twitter に投稿する'''
@@ -207,30 +217,18 @@ class AnondBotDaemon:
                 json.dump(self.config, f, indent='\t')
 
         # ホッテントリ
-        hot_entries = set(self.get_hot_entries())
-        changed_hot_entries = self.last_hot_entries ^ hot_entries
-        self.last_hot_entries = hot_entries
+        hot_entries = {
+            article.url: article
+            for article in takewhile(
+                lambda x: x.bookmark_count >= self.config['hot_entry_bookmark_threshold'],
+                self.get_hot_entries()
+            )
+        }
+        changed_hot_entry_urls = hot_entries.keys() - self.last_hot_entries
+        self.last_hot_entries = hot_entries.keys()
 
-        for url in changed_hot_entries:
-            doc = requests.get(url)
-            soup = BeautifulSoup(doc.content, 'html5lib')
-
-            title_elements = soup.select_one('h3 > a').next_siblings
-            title = '【注目エントリ】' + ''.join(e.string for e in title_elements)
-
-            body_strs = []
-            targets = soup.find('h3').next_sibling.next_siblings
-            goal = soup.find('div', id='rectangle-middle')
-            for target in targets:
-                if target == goal:
-                    break
-
-                if not isinstance(target, NavigableString):
-                    body_strs.append(target.get_text())
-
-            body = ' '.join(body_strs)
-
-            self.post_twitter(title, body, url)
+        for url in changed_hot_entry_urls:
+            self.post_twitter('【注目エントリ】' + hot_entries[url].title, hot_entries[url].body, url)
 
         self.config['last_hot_entries'] = list(self.last_hot_entries)
         with open(self.config_file_path, 'w') as f:
