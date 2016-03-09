@@ -67,6 +67,8 @@ class TwitterError(Exception):
             return TwitterRateLimitExceeded(code, message)
         if code == 187:
             return TwitterStatusDuplicate(code, message)
+        if code == 354:
+            return TwitterTooLongStatus(code, message)
 
         return TwitterError(code, message)
 
@@ -76,4 +78,8 @@ class TwitterRateLimitExceeded(TwitterError):
 
 
 class TwitterStatusDuplicate(TwitterError):
+    pass
+
+
+class TwitterTooLongStatus(TwitterError):
     pass
