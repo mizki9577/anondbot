@@ -64,9 +64,15 @@ class TwitterError(Exception):
     def from_code(cls, code, message):
         if code == 88:
             return TwitterRateLimitExceeded(code, message)
+        if code == 187:
+            return TwitterStatusDuplicate(code, message)
 
         return TwitterError(code, message)
 
 
 class TwitterRateLimitExceeded(TwitterError):
+    pass
+
+
+class TwitterStatusDuplicate(TwitterError):
     pass
