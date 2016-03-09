@@ -26,7 +26,7 @@ class TwitterAPI:
         if 'errors' not in response:
             return response
         for error in response['errors']:
-            raise TwitterException(error['code'], error['message'])
+            raise TwitterError.from_code(error['code'], error['message'])
 
     @property
     def statuses(self):
@@ -54,8 +54,19 @@ class TwitterHelpAPI(TwitterAPI):
         return self.call_api('GET', self.CONFIGURATION_URL)
 
 
-class TwitterException(Exception):
+class TwitterError(Exception):
 
     def __init__(self, code, message):
         super().__init__('code {}: {}'.format(code, message))
         self.code = code
+
+    @classmethod
+    def from_code(cls, code, message):
+        if code == 88:
+            return TwitterRateLimitExceeded(code, message)
+
+        return TwitterError(code, message)
+
+
+class TwitterRateLimitExceeded(TwitterError):
+    pass
