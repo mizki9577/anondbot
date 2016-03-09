@@ -39,7 +39,7 @@ class TwitterAPI:
 
 class TwitterStatusesAPI(TwitterAPI):
 
-    STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
+    UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
 
     def update(self, status):
         return self.call_api('POST', self.UPDATE_URL,
