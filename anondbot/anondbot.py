@@ -226,9 +226,12 @@ class AnondBotDaemon:
         self.last_hot_entries = hot_entries.keys()
 
         for url in changed_hot_entry_urls:
-            self.post_twitter('【注目エントリ】'
-                              + hot_entries[url].title,
-                              hot_entries[url].body, url)
+            try:
+                self.post_twitter('【注目エントリ】'
+                                  + hot_entries[url].title,
+                                  hot_entries[url].body, url)
+            except TwitterError as e:
+                self.logger.error(e.message)
 
         self.config['last_hot_entries'] = list(self.last_hot_entries)
         with open(self.config_file_path, 'w') as f:
@@ -255,7 +258,10 @@ class AnondBotDaemon:
                 continue
 
             # Twitter に投稿
-            self.post_twitter(article.title, article.body, article.url)
+            try:
+                self.post_twitter(article.title, article.body, article.url)
+            except TwitterError as e:
+                self.logger.error(e.message)
 
             # 設定の保存
             self.config['last_article_timestamp'] = self.last_article_timestamp
