@@ -114,7 +114,7 @@ class AnondBotDaemon:
         self.pid_file_path = self.config['pid_file_path']
 
         # Twitter の設定を取得
-        self.twitter_config = self.twitter_api.help_configuration()
+        self.twitter_config = self.twitter_api.help.configuration()
         print(self.twitter_config)
         self.twitter_config['tweet_length_limit'] = 140
 
@@ -260,5 +260,5 @@ class AnondBotDaemon:
             status = title + ' ' + status
 
         if not self.dry_run:
-            self.twitter_api.statuses_update(status)
+            self.twitter_api.statuses.update(status)
         self.logger.info(status)

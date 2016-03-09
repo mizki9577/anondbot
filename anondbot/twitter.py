@@ -8,17 +8,17 @@ class TwitterAPI:
     簡易 Twitter API
     '''
 
-    STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
-    HELP_CONFIGURATION_URL = \
-        'https://api.twitter.com/1.1/help/configuration.json'
-
     def __init__(self,
-                 consumer_key, consumer_secret,
-                 access_token, access_secret):
-        self.oauth = OAuth1(client_key=consumer_key,
-                            client_secret=consumer_secret,
-                            resource_owner_key=access_token,
-                            resource_owner_secret=access_secret)
+                 oauth=None,
+                 consumer_key=None, consumer_secret=None,
+                 access_token=None, access_secret=None):
+        if oauth is not None:
+            self.oauth = oauth
+        else:
+            self.oauth = OAuth1(client_key=consumer_key,
+                                client_secret=consumer_secret,
+                                resource_owner_key=access_token,
+                                resource_owner_secret=access_secret)
 
     def call_api(self, method, url, params=None):
         r = requests.request(method, url, params=params, auth=self.oauth)
@@ -28,12 +28,30 @@ class TwitterAPI:
         for error in response['errors']:
             raise TwitterException(error['code'], error['message'])
 
-    def statuses_update(self, status):
-        return self.call_api('POST', self.STATUSES_UPDATE_URL,
+    @property
+    def statuses(self):
+        return TwitterStatusesAPI(oauth=self.oauth)
+
+    @property
+    def help(self):
+        return TwitterHelpAPI(oauth=self.oauth)
+
+
+class TwitterStatusesAPI(TwitterAPI):
+
+    STATUSES_UPDATE_URL = 'https://api.twitter.com/1.1/statuses/update.json'
+
+    def update(self, status):
+        return self.call_api('POST', self.UPDATE_URL,
                              params={'status': status})
 
-    def help_configuration(self):
-        return self.call_api('GET', self.HELP_CONFIGURATION_URL)
+
+class TwitterHelpAPI(TwitterAPI):
+
+    CONFIGURATION_URL = 'https://api.twitter.com/1.1/help/configuration.json'
+
+    def configuration(self):
+        return self.call_api('GET', self.CONFIGURATION_URL)
 
 
 class TwitterException(Exception):
