@@ -137,7 +137,7 @@ class AnondBotDaemon:
             self.logger.info('fetching failed. loading chached configuration...')
             try:
                 with open(self.twitter_config_cache_file_path, 'r') as f:
-                    json.load(f)
+                    self.twitter_config = json.load(f)
             except FileNotFoundError:
                 self.logger.error('loading failed. use default configuration.')
                 self.twitter_config = {'short_url_length': 23}
