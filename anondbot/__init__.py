@@ -18,7 +18,7 @@ from docopt import docopt
 
 
 def main():
-    args = docopt(__doc__, version='anondbot 1.2.6')
+    args = docopt(__doc__, version='anondbot 1.2.7')
     daemon = AnondBotDaemon(
         config_file_path=args['--config'],
         cache_dir_path=args['--cache'],
