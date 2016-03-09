@@ -1,6 +1,8 @@
 import json
 import logging
 import logging.handlers
+import os
+import os.path
 import re
 import sys
 import time
@@ -13,7 +15,7 @@ import iso8601
 from bs4 import BeautifulSoup
 from daemon import daemon, pidfile
 
-from .twitter import TwitterAPI
+from .twitter import TwitterAPI, TwitterError
 
 
 class AnondArticle:
@@ -92,8 +94,9 @@ class AnondBotDaemon:
 
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
     ANOND_HOT_ENTRIES_URL = 'http://b.hatena.ne.jp/entrylist?sort=hot&url=http://anond.hatelabo.jp/&mode=rss'
+    TWITTER_CONFIG_FILE_NAME = 'twitter_config.json'
 
-    def __init__(self, config_file_path,
+    def __init__(self, config_file_path, cache_dir_path,
                  daemonize=None, dry_run=False, quiet=False):
         self.dry_run = dry_run
         self.daemonize = daemonize
@@ -104,6 +107,13 @@ class AnondBotDaemon:
         with open(self.config_file_path, 'r') as f:
             self.config = json.load(f)
 
+        # キャッシュディレクトリの作成
+        self.cache_dir_path = cache_dir_path
+        if not os.access(self.cache_dir_path, os.R_OK):
+            os.mkdir(self.cache_dir_path)
+        self.twitter_config_cache_file_path = os.path.join(
+            self.cache_dir_path, self.TWITTER_CONFIG_FILE_NAME)
+
         # Twitter 関係
         self.twitter_api = TwitterAPI(**self.config['twitter'])
 
@@ -113,16 +123,29 @@ class AnondBotDaemon:
         self.interval_sec = self.config['update_interval']
         self.pid_file_path = self.config['pid_file_path']
 
-        # Twitter の設定を取得
-        self.twitter_config = self.twitter_api.help.configuration()
-        print(self.twitter_config)
-        self.twitter_config['tweet_length_limit'] = 140
-
         # ロガーの設定
         self.logger = logging.getLogger('anondbot')
         self.logger.setLevel(logging.DEBUG)
         if not self.quiet:
             self.logger.addHandler(logging.StreamHandler())
+
+        # Twitter の設定を取得
+        self.logger.debug('fetching twitter configuration...')
+        try:
+            self.twitter_config = self.twitter_api.help.configuration()
+        except TwitterError:
+            self.logger.info('fetching failed. loading chached configuration...')
+            try:
+                with open(self.twitter_config_cache_file_path, 'r') as f:
+                    json.load(f)
+            except FileNotFoundError:
+                self.logger.error('loading failed. use default configuration.')
+                self.twitter_config = {'short_url_length': 23}
+        else:
+            self.logger.debug('fetching done.')
+            with open(self.twitter_config_cache_file_path, 'w') as f:
+                json.dump(self.twitter_config, f)
+        self.twitter_config['tweet_length_limit'] = 140
 
     def run(self):
         '''デーモンを開始する'''
