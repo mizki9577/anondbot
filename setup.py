@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='anondbot',
-    version='1.2.5',
+    version='1.2.6',
     author='Mizki SUZUMORI',
     author_email='mizki9577@gmail.com',
     description='Twitter bot daemon which notifies recent articles of Hatena Anonymous Diary.',
