@@ -22,7 +22,11 @@ class TwitterAPI:
 
     def call_api(self, method, url, params=None):
         r = requests.request(method, url, params=params, auth=self.oauth)
-        return r.json()
+        response = r.json()
+        if 'errors' not in response:
+            return response
+        for error in response['errors']:
+            raise TwitterException(error['code'], error['message'])
 
     def statuses_update(self, status):
         return self.call_api('POST', self.STATUSES_UPDATE_URL,
@@ -30,3 +34,10 @@ class TwitterAPI:
 
     def help_configuration(self):
         return self.call_api('GET', self.HELP_CONFIGURATION_URL)
+
+
+class TwitterException(Exception):
+
+    def __init__(self, code, message):
+        super().__init__('code {}: {}'.format(code, message))
+        self.code = code
