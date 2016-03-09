@@ -59,6 +59,7 @@ class TwitterError(Exception):
     def __init__(self, code, message):
         super().__init__('code {}: {}'.format(code, message))
         self.code = code
+        self.message = message
 
     @classmethod
     def from_code(cls, code, message):
