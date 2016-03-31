@@ -280,7 +280,7 @@ class AnondBotDaemon:
 
             body = re.sub(r'\s+', ' ', body.strip())
             if len(body) > max_body_length:
-                body = body[:max_body_length-3] + '...'
+                body = body[:max_body_length-1] + '…'
 
         status = url
         if len(body):
