@@ -93,7 +93,10 @@ class AnondBotDaemon:
     '''
 
     ANOND_FEED_URL = 'http://anond.hatelabo.jp/rss'
-    ANOND_HOT_ENTRIES_URL = 'http://b.hatena.ne.jp/entrylist?sort=hot&url=http://anond.hatelabo.jp/&mode=rss'
+    ANOND_HOT_ENTRIES_URL = (
+        'http://b.hatena.ne.jp/entrylist?sort=hot'
+        '&url=http://anond.hatelabo.jp/&mode=rss'
+    )
     TWITTER_CONFIG_FILE_NAME = 'twitter_config.json'
 
     def __init__(self, config_file_path, cache_dir_path,
@@ -134,7 +137,8 @@ class AnondBotDaemon:
         try:
             self.twitter_config = self.twitter_api.help.configuration()
         except TwitterError:
-            self.logger.info('fetching failed. loading chached configuration...')
+            self.logger.info('fetching failed. '
+                             'loading chached configuration...')
             try:
                 with open(self.twitter_config_cache_file_path, 'r') as f:
                     self.twitter_config = json.load(f)
@@ -181,7 +185,7 @@ class AnondBotDaemon:
     def get_anond_articles(self):
         '''新着記事の一覧を取得し古い順に返すジェネレータを返す'''
         self.logger.info('fetching {}'.format(self.ANOND_FEED_URL))
-        doc = requests.get(self.ANOND_FEED_URL)
+        doc = requests.get(self.ANOND_FEED_URL, timeout=60)
         self.logger.info('fetching finished.')
 
         soup = BeautifulSoup(doc.content, 'html.parser')
@@ -196,7 +200,7 @@ class AnondBotDaemon:
     def get_hot_entries(self):
         '''注目エントリの一覧を取得しブクマ数順にリストで返す'''
         self.logger.info('fetching {}'.format(self.ANOND_HOT_ENTRIES_URL))
-        doc = requests.get(self.ANOND_HOT_ENTRIES_URL)
+        doc = requests.get(self.ANOND_HOT_ENTRIES_URL, timeout=60)
         self.logger.info('fetching finished.')
 
         soup = BeautifulSoup(doc.content, 'html.parser')
@@ -218,7 +222,8 @@ class AnondBotDaemon:
         hot_entries = {
             article.url: article
             for article in takewhile(
-                lambda x: x.bookmark_count >= self.config['hot_entry_threshold'],
+                lambda x: (x.bookmark_count >=
+                           self.config['hot_entry_threshold']),
                 self.get_hot_entries()
             )
         }
@@ -227,8 +232,8 @@ class AnondBotDaemon:
 
         for url in changed_hot_entry_urls:
             try:
-                self.post_twitter('【注目エントリ】'
-                                  + hot_entries[url].title,
+                self.post_twitter('【注目エントリ】' +
+                                  hot_entries[url].title,
                                   hot_entries[url].body, url)
             except TwitterError as e:
                 self.logger.error(e.message)
@@ -270,8 +275,8 @@ class AnondBotDaemon:
 
     def post_twitter(self, title, body, url):
         max_body_length = (
-            self.twitter_config['tweet_length_limit']
-            - self.twitter_config['short_url_length']
+            self.twitter_config['tweet_length_limit'] -
+            self.twitter_config['short_url_length']
         )
         if len(title):
             max_body_length -= len(title) + 1  # タイトルの後ろのスペース+1
